@@ -1,6 +1,8 @@
 import cookielib
+import errno
 import random
 import re
+import socket
 import sys
 import time
 import urllib
@@ -72,6 +74,11 @@ class WebOfKnowledgeSearcher:
         except urllib2.URLError as e:
             self.log("Request error: %s" % e)
             return -1
+        except socket.error as serr:
+            if serr.errno != errno.ECONNREFUSED:
+                raise serror
+            self.log("Socket error: %s" % serr)
+            return -1
 
     def _create_session(self):
         """Create a cookie and session, and get the session ID."""
@@ -134,11 +141,20 @@ class WebOfKnowledgeSearcher:
             return -1,0
 
         # If there pagecount length is not one, there were probably no results, and we need to bail out.
+        # Also, getting the actual integer sometimes for pagecount sometimes fails when the formatting
+        # of HTML is mangled so we want to return nothing in that case, too. It might be a better option,
+        # however, to retry the request in such a case.
         pagecount = self.find_pagecounts(response)
         try:
             assert len(pagecount) == 1
             pagecount = int(pagecount[0].text)
         except AssertionError:
+            self.log("Length of pagecount was not one, quitting query.")
+            self.log("Request data: " + str(data))
+            return [], 0
+        except ValueError:
+            self.log("Could not convert pagecount to integer, quitting query.")
+            self.log("Request data: " + str(data))
             return [], 0
 
         # Sometimes the query ID is not incremented (for example for error repsonses). Instead of discovering
@@ -147,6 +163,7 @@ class WebOfKnowledgeSearcher:
         qids = list(set([int(q.strip("&").split('=')[1]) for q in qids]))
         if len(qids) != 1:
             self.log("Unable to parse a consistent query ID, something is wrong.")
+            self.log("Request data: " + str(data))
             return -1, 0
         qid = qids[0]
 
