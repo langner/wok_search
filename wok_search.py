@@ -256,13 +256,21 @@ class WebOfKnowledgeSearcher:
         except IndexError:
             parsed = filter_out(parsed, 'title')
 
-        # The volume, pages and year should be in the <span> element that
-        # follows a <span> element with an appropriate text. The DOI also
-        # used to be parsable in this way (not as of V5.13).
+        # The first author, volume, pages and year should all occur after a <span> element
+        # with an appropriate text. The DOI also used to be parsable in this way, before V5.13.
         for i,span in enumerate(soup.findAll("span")):
 
-            # Sometimes the volumes contains the issue, too, for example when
-            # it is a supplement (as in '18 Suppl 1'), in which case remove it.
+            # Up to three authors are listed in a <div> element directly after a <span> element
+            # with the appropriate trigger text.
+            if span.text[:3] == "By:":
+                try:
+                    parsed['first_author'] = span.parent.text.strip("By:").split(";")[0]
+                except IndexError:
+                    parsed = filter_out(parser, 'first_author')
+
+            # The voume is found in the next <span> element after the <span> element with the
+            # appropriate trigger text. Sometimes the volumes contains the issue, too, for example
+            # when it is a supplement (as in '18 Suppl 1'), in which case remove it.
             if span.text[:7] == "Volume:":
                 try:
                     parsed['vol'] = soup.findAll("span")[i+1].text.lower()
@@ -271,8 +279,9 @@ class WebOfKnowledgeSearcher:
                 except IndexError:
                     parsed = filter_out(parsed, 'vol')
 
-            # Although typically the article number is treated as the page number,
-            # Web of Knowledge labels them separately, so parse it that way, too.
+            # The page is also in a <span> after the triggering <span> element. Although typically
+            # the article number is treated as the page number, Web of Knowledge labels them separately,
+            # so we need to parse that separately.
             if span.text[:6] == "Pages:":
                 try:
                     parsed['pages'] = soup.findAll("span")[i+1].text
@@ -284,11 +293,11 @@ class WebOfKnowledgeSearcher:
                 except IndexError:
                     parsed = filter_out(parsed, 'article number')
 
-            # The year normally comes after a month, but sometimes the year precedes
-            # the month (rarely, but still), so also try to take the first word if
-            # the last one fails, and checking that the year has four digits also catches
-            # some strange strings out there. Furthermore, the date is usually space-separated,
-            # but occasionally it is ISO-like with parts separated by dashes.
+            # In the <span> contains the data, the year normally comes after a month, but sometimes
+            # it precedes the month, so also try to take the first word if the last one fails,
+            # and checking that the year has four digits also catches a minority of strange strings
+            # out there. Furthermore, the date is usually space-separated, but occasionally it is
+            # formatted ISO-like with parts separated by dashes.
             if span.text[:10] == "Published:":
                 try:
                     parsed['year'] = int(soup.findAll("span")[i+1].text.split()[-1].split()[-1])
