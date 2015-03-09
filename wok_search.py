@@ -264,7 +264,7 @@ class WebOfKnowledgeSearcher:
             # with the appropriate trigger text.
             if span.text[:3] == "By:":
                 try:
-                    parsed['first_author'] = span.parent.text.strip("By:").split(";")[0]
+                    parsed['first_author'] = span.parent.text.replace("By:", "").split(";")[0]
                 except IndexError:
                     parsed = filter_out(parser, 'first_author')
 
