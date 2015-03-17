@@ -41,7 +41,7 @@ class WebOfKnowledgeSearcher:
         self.get_request_count = 0
 
         # Note that this is a function that logs a message, not a logger object.
-        logfunc = logfunc or (lambda msg: sys.stdout.writeline("%s\n" %msg))
+        logfunc = logfunc or (lambda msg: sys.stdout.write("%s\n" %msg))
         self._set_logfunc(logfunc)
 
         self._create_session()
