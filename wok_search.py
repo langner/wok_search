@@ -12,7 +12,7 @@ from BeautifulSoup import BeautifulSoup
 
 
 class WebOfKnowledgeSearcher:
-    """Automate the task of searching WoK for papers (gist.github.com/langner/7176205)."""
+    """Automate the task of searching WoK for papers."""
 
     wokurl = "http://www.webofknowledge.com"
     searchurl = "http://apps.webofknowledge.com/UA_GeneralSearch.do"
